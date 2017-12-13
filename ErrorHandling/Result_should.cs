@@ -124,7 +124,7 @@ namespace ResultOfTask
 				.Then(hex => parsed.GetValueOrThrow() + " -> " + Guid.Parse(hex + hex + hex + hex));
 			res.ShouldBeEquivalentTo(Result.Ok("1358571172 -> 50fa26a4-50fa-26a4-50fa-26a450fa26a4"));
 		}
-/*
+
 		[Test]
 		public void ReplaceError_IfFail()
 		{
@@ -150,14 +150,14 @@ namespace ResultOfTask
 				.ShouldBeEquivalentTo(Result.Fail<int>("error"));
 		}
 
-		[Test]
-		public void RefineError_AddErrorMessageBeforePreviousErrorText()
-		{
-			var calculation = Result.Fail<None>("No connection");
-			calculation
-				.RefineError("Posting results to db")
-				.ShouldBeEquivalentTo(Result.Fail<None>("Posting results to db. No connection"));
-		}
-		*/
-	}
+        [Test]
+        public void RefineError_AddErrorMessageBeforePreviousErrorText()
+        {
+            var calculation = Result.Fail<None>("No connection");
+            calculation
+                .RefineError("Posting results to db")
+                .ShouldBeEquivalentTo(Result.Fail<None>("Posting results to db. No connection"));
+        }
+
+    }
 }
