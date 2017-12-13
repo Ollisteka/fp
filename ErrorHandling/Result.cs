@@ -23,56 +23,77 @@ namespace ResultOfTask
 			throw new InvalidOperationException($"No value. Only Error {Error}");
 		}
 		public bool IsSuccess => Error == null;
+
+
+	   
 	}
 
-	public static class Result
-	{
-		public static Result<T> AsResult<T>(this T value)
-		{
-			return Ok(value);
-		}
+    public static class Result
+    {
+        public static Result<T> AsResult<T>(this T value)
+        {
+            return Ok(value);
+        }
 
-		public static Result<T> Ok<T>(T value)
-		{
-			return new Result<T>(null, value);
-		}
+        public static Result<T> Ok<T>(T value)
+        {
+            return new Result<T>(null, value);
+        }
 
-		public static Result<T> Fail<T>(string e)
-		{
-			return new Result<T>(e);
-		}
+        public static Result<T> Fail<T>(string e)
+        {
+            return new Result<T>(e);
+        }
 
-		public static Result<T> Of<T>(Func<T> f, string error = null)
-		{
-			try
-			{
-				return Ok(f());
-			}
-			catch (Exception e)
-			{
-				return Fail<T>(error ?? e.Message);
-			}
-		}
+        public static Result<T> Of<T>(Func<T> f, string error = null)
+        {
+            try
+            {
+                return Ok(f());
+            }
+            catch (Exception e)
+            {
+                return Fail<T>(error ?? e.Message);
+            }
+        }
 
-		public static Result<TOutput> Then<TInput, TOutput>(
-			this Result<TInput> input,
-			Func<TInput, TOutput> continuation)
-		{
-			throw new NotImplementedException();
-		}
+        public static Result<TOutput> Then<TInput, TOutput>(
+            this Result<TInput> input,
+            Func<TInput, TOutput> continuation)
+        {
+            return !input.IsSuccess 
+                ? Fail<TOutput> (input.Error) 
+                : Of(() => continuation(input.Value));
+        }
 
-		public static Result<TOutput> Then<TInput, TOutput>(
-			this Result<TInput> input,
-			Func<TInput, Result<TOutput>> continuation)
-		{
-			throw new NotImplementedException();
-		}
+        public static Result<TOutput> Then<TInput, TOutput>(
+            this Result<TInput> input,
+            Func<TInput, Result<TOutput>> continuation)
+        {
+            return continuation(input.Value);
+        }
 
-		public static Result<TInput> OnFail<TInput>(
-			this Result<TInput> input,
-			Action<string> handleError)
-		{
-			throw new NotImplementedException();
-		}
-	}
+        public static Result<TInput> ReplaceError<TInput>(this Result<TInput> input, Func<string, string> func)
+        {
+            return !input.IsSuccess
+                ? Fail<TInput>(func(input.Error))
+                : Ok(input.Value);
+        }
+
+        public static Result<TInput> OnFail<TInput>(
+            this Result<TInput> input,
+            Action<string> handleError)
+        {
+            if (input.IsSuccess) return Ok(input.Value);
+            handleError(input.Error);
+            return Fail<TInput>(input.Error);
+        }
+
+        public static Result<TInput> RefineError<TInput>(this Result<TInput> input, string postingResultsToDb)
+        {
+            return input.IsSuccess
+                ? Ok(input.Value)
+                : input.ReplaceError(x => $"{postingResultsToDb}. {input.Error}");
+        }
+    }
 }
