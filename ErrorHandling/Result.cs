@@ -61,6 +61,7 @@ namespace ResultOfTask
             this Result<TInput> input,
             Func<TInput, TOutput> continuation)
         {
+           
             return !input.IsSuccess 
                 ? Fail<TOutput> (input.Error) 
                 : Of(() => continuation(input.Value));
@@ -91,9 +92,8 @@ namespace ResultOfTask
 
         public static Result<TInput> RefineError<TInput>(this Result<TInput> input, string postingResultsToDb)
         {
-            return input.IsSuccess
-                ? Ok(input.Value)
-                : input.ReplaceError(x => $"{postingResultsToDb}. {input.Error}");
+            
+                return input.ReplaceError(x => $"{postingResultsToDb}. {input.Error}");
         }
     }
 }

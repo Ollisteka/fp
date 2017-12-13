@@ -1,5 +1,6 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
+using ResultOf;
 
 namespace FileSenderRailway
 {
@@ -30,13 +31,24 @@ namespace FileSenderRailway
 			Content = content;
 		}
 
-		public string Name { get; set; }
-		public DateTime Created { get; set; }
-		public string Format { get; set; }
-		public byte[] Content { get; set; }
+		public string Name { get; }
+		public DateTime Created { get;  }
+		public string Format { get; }
+		public byte[] Content { get; }
 	}
 
-	public class FileContent
+
+    public static class DocumentExtensions
+    {
+        public static Document Sign(this Document doc,
+            ICryptographer cryptographer,
+            X509Certificate certificate)
+        {
+            return new Document(doc.Name, cryptographer.Sign(doc.Content, certificate), doc.Created, doc.Format);
+        }
+    }
+
+    public class FileContent
 	{
 		public FileContent(string name, byte[] content)
 		{
@@ -46,7 +58,30 @@ namespace FileSenderRailway
 
 		public string Name { get; }
 		public byte[] Content { get; }
-	}
+
+	    public Result<Document> PrepareToSend(X509Certificate certificate, Func<FileContent,Document> recognise, ICryptographer cryptographer, Func<DateTime> now)
+	    {
+	        var doc = recognise(this);
+	        if (!IsValidFormatVersion(doc))
+	            return Result.Fail<Document>("Can't prepare file to send. Invalid format version: " + doc.Format);
+	            //throw new FormatException("Invalid format version: " + doc.Format);
+	        if (!IsValidTimestamp(doc, now))
+	            return Result.Fail<Document>("Can't prepare file to send. Too old document: " + doc.Created);
+            //throw new FormatException("Too old document: " + doc.Created);
+            return Result.Ok<Document>(doc);
+            return doc.Sign(cryptographer, certificate);
+        }
+	    private bool IsValidFormatVersion(Document doc)
+	    {
+	        return doc.Format == "4.0" || doc.Format == "3.1";
+	    }
+
+	    private bool IsValidTimestamp(Document doc, Func<DateTime> now)
+	    {
+	        var oneMonthBefore = now().AddMonths(-1);
+	        return doc.Created > oneMonthBefore;
+	    }
+    }
 
 	public class FileSendResult
 	{
